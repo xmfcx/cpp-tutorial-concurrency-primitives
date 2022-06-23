@@ -1,59 +1,33 @@
 #include <atomic>
 #include <future>
+#include <iomanip>
 #include <iostream>
 #include <mutex>
 #include <thread>
 #include <vector>
 
-// prints elements of vector
-void print(const std::vector<std::atomic_int> &v, const std::string &name) {
-  std::cout << name << ": ";
-  for (const auto &i: v)
-    std::cout << i << " ";
-  std::cout << std::endl;
+// a function that calculates pi to 1000 precision
+double pi_calculator(int precision) {
+  double pi = 0;
+  for (int i = 0; i < precision; i++) {
+    pi += (i % 2 == 0) ? -1.0 / (2 * i + 1) : 1.0 / (2 * i + 1);
+  }
+  return pi * 4;
 }
 
 int main() {
-  // vector of numbers 1 to 10000
-  std::vector<std::atomic<int>> numbers(10);
-  for (int i = 0; i < numbers.size(); ++i)
-    numbers[i] = i + 1;
 
-  // create a mutex
-  std::mutex m_println;
-  auto println_protected = [](const std::string &text) {
-    std::cout << text << std::endl;
-  };
+  // cout with 100000 precision
+  std::cout << std::setprecision(100000);
+  //  std::cout << "pi 1: " << pi_calculator(100000000) << std::endl;
 
-  auto make_x = [println_protected, &m_println](
-                    std::vector<std::atomic_int> &numbers,
-                    int x,
-                    size_t ind_start,
-                    size_t ind_end,
-                    const std::string &name) {
-    for (size_t i = ind_start; i <= ind_end; i++) {
-      numbers[i] = x;
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
-  };
+  std::future<double> pi_future = std::async(std::launch::async, pi_calculator, 1000000000);
+  std::future<double> pi_future2 = std::async(std::launch::async, pi_calculator, 100000000);
+  std::future<double> pi_future3 = std::async(std::launch::async, pi_calculator, 10000000);
 
-  // print numbers
-  print(numbers, "numbers");
+  std::cout << "doing other work" << std::endl;
 
-  std::thread t1(make_x, std::ref(numbers), 1, 0, 9, "ahmet");
-
-  std::future<void> future_make = std::async(std::launch::async,
-                                             make_x, std::ref(numbers), 2, 0, 9, "mehmet");
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-  std::cout << "threads are still ongoing" << std::endl;
-
-  t1.join();
-  std::cout << "t1 joined" << std::endl;
-
-  future_make.get();
-  std::cout << "future_make finished" << std::endl;
-
-  // print numbers
-  print(numbers, "numbers");
+  std::cout << "pi 1: " << pi_future.get() << std::endl;
+  std::cout << "pi 2: " << pi_future2.get() << std::endl;
+  std::cout << "pi 3: " << pi_future3.get() << std::endl;
 }
