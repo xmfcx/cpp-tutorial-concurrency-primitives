@@ -41,15 +41,18 @@ int main() {
   print(numbers, "numbers");
 
   std::thread t1(make_x, std::ref(numbers), 1, 0, 9, "ahmet");
-  std::thread t2(make_x, std::ref(numbers), 2, 0, 9, "mehmet");
+
+  std::future<void> future_make = std::async(std::launch::async,
+                                             make_x, std::ref(numbers), 2, 0, 9, "mehmet");
 
   std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   std::cout << "threads are still ongoing" << std::endl;
 
   t1.join();
   std::cout << "t1 joined" << std::endl;
-  t2.join();
-  std::cout << "t2 joined" << std::endl;
+
+  future_make.get();
+  std::cout << "future_make finished" << std::endl;
 
   // print numbers
   print(numbers, "numbers");
