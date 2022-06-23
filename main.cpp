@@ -6,28 +6,50 @@
 #include <thread>
 #include <vector>
 
-// a function that calculates pi to 1000 precision
-double pi_calculator(int precision) {
-  double pi = 0;
-  for (int i = 0; i < precision; i++) {
-    pi += (i % 2 == 0) ? -1.0 / (2 * i + 1) : 1.0 / (2 * i + 1);
+class Cat {
+ public:
+  void ChangeName(const std::string &name) {
+    std::lock_guard<std::mutex> lock(mutex_name_);
+    name_ = name;
   }
-  return pi * 4;
-}
+
+  void PrintName() {
+    std::lock_guard<std::mutex> lock(mutex_name_);
+    std::cout << name_ << std::endl;
+  }
+
+ private:
+  std::mutex mutex_name_;
+  std::string name_;
+};
 
 int main() {
+  Cat cat;
 
-  // cout with 100000 precision
-  std::cout << std::setprecision(100000);
-  //  std::cout << "pi 1: " << pi_calculator(100000000) << std::endl;
+  std::thread name_changer([&cat]() {
+    for (int i = 0; i < 10000000; ++i) {
+      cat.ChangeName("caaaaaaaaaaaaat " + std::to_string(i));
+    }
+  });
+  std::thread name_changer2([&cat]() {
+    for (int i = 0; i < 10000000; ++i) {
+      cat.ChangeName("doooooooooooooooog " + std::to_string(i));
+    }
+  });
+  std::thread name_changer3([&cat]() {
+    for (int i = 0; i < 10000000; ++i) {
+      cat.ChangeName("giraffeeeeeeeeeeeeeeeeeee " + std::to_string(i));
+    }
+  });
 
-  std::future<double> pi_future = std::async(std::launch::async, pi_calculator, 1000000000);
-  std::future<double> pi_future2 = std::async(std::launch::async, pi_calculator, 100000000);
-  std::future<double> pi_future3 = std::async(std::launch::async, pi_calculator, 10000000);
+  std::thread printer([&cat]() {
+    while (true) {
+      cat.PrintName();
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+  });
 
-  std::cout << "doing other work" << std::endl;
-
-  std::cout << "pi 1: " << pi_future.get() << std::endl;
-  std::cout << "pi 2: " << pi_future2.get() << std::endl;
-  std::cout << "pi 3: " << pi_future3.get() << std::endl;
+  name_changer.join();
+  name_changer2.join();
+  printer.join();
 }
